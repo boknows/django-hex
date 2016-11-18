@@ -8,6 +8,7 @@ from django.db.models import ForeignKey, DecimalField, CharField, IntegerField
 from django.utils.encoding import python_2_unicode_compatible
 
 
+MAX_PLAYERS_TO_INVITE = 7 # This is NOT including the starting player
 
 class Game(TimeStampedModel):
     start_date = models.DateField(default=datetime.date.today)
