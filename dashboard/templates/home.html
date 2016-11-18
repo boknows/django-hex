@@ -1,0 +1,6 @@
+{% block content %}
+<p>Logged in!</p>
+{{ user }}
+
+<a href="{% url 'dashboard:create_game' %}">Create Game</a>
+{% endblock content %}

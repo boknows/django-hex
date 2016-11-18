@@ -1,0 +1,47 @@
+{% block main_content %}
+
+    <form method="post" class="form-horizontal">{% csrf_token %}
+        <div class="row">
+           <div class="col-sm-4 col-sm-offset-4">
+                {% if message %}
+                    <div class="alert alert-warning">
+                        {{ message|safe }}
+                    </div>
+                {% endif %}
+                {% if form.errors %}
+                    <div class="alert alert-error clearfix">
+                        <h4>Please correct the following:</h4>
+                        <ul>
+                            {% for field in form %}
+                                {% if field.errors %}
+                                    <li><a href="#{{ field.id_for_label }}" onclick="$('#{{ field.id_for_label }}').focus();return false;">{{ field.errors|join:", " }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                        {% if form.non_field_errors %}
+                            {{ form.non_field_errors }}
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                {% for field in form %}
+                    <div class="{{ field.name }} form-group{% if field.errors %} has-error{% endif %}">
+                        <label for="{{field.id_for_label}}" class="control-label">
+                            {{ field.label }}
+                        </label>
+                        {{ field }}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-4 col-sm-offset-4 btns">
+                <input type="submit" value="Save &amp; Continue" class="btn btn-primary btn-sma-md"/>
+            </div>
+        </div>
+    </form>
+
+{% endblock main_content %}
+
+
+
