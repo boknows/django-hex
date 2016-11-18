@@ -1,6 +1,6 @@
 from map.models import MAX_PLAYERS_TO_INVITE
 from django.contrib.auth.models import User
-from map.models import Game, GameLog, GameMembership, Map
+from map.models import Game, GameLog, GameMembership, Map, Tile
 
 import math
 import random

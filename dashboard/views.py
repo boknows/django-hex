@@ -1,6 +1,6 @@
 from __future__ import division
 
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from forms import CreateGameForm
 from start_game import start_game
