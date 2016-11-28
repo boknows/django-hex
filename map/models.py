@@ -4,7 +4,7 @@ import datetime
 from django.contrib.auth.models import User
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
-from django.db.models import ForeignKey, DecimalField, CharField, IntegerField
+from django.db.models import ForeignKey, DecimalField, CharField, IntegerField, BooleanField
 
 
 MAX_PLAYERS_TO_INVITE = 7 # This is NOT including the starting player
@@ -51,10 +51,11 @@ class Tile(TimeStampedModel):
     map = ForeignKey(Map, null=False)
     row = IntegerField(null=True, blank=True)
     column = IntegerField(null=True, blank=True)
+    units = IntegerField(null=True, blank=True)
     terrain = CharField(max_length=64, null=True, blank=True)
     terrain_color = CharField(max_length=64, null=True, blank=True)
     owner = models.ForeignKey(User, unique=False, null=True)
-    onwer_color = CharField(max_length=64, null=True, blank=True)
+    owner_color = CharField(max_length=64, null=True, blank=True)
     border_n = CharField(max_length=64, null=True, blank=True)
     border_s = CharField(max_length=64, null=True, blank=True)
     border_ne = CharField(max_length=64, null=True, blank=True)
@@ -62,6 +63,7 @@ class Tile(TimeStampedModel):
     border_se = CharField(max_length=64, null=True, blank=True)
     border_sw = CharField(max_length=64, null=True, blank=True)
     tile_text = CharField(max_length=64, null=True, blank=True)
+    highlighted = BooleanField(default=False)
 
     def __str__(self):
         return 'Tile - row(%s) column(%s) - Owner(%s) - map_id(%s)' % (self.row, self.column, self.owner, self.map.id)

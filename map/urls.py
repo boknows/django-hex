@@ -1,11 +1,12 @@
 from django.conf.urls import url
 from rest_framework.urlpatterns import format_suffix_patterns
 
-from views import create_map, game, GameList, GameDetail, UserList, UserDetail, api_root, game_test
+from views import create_map, game, GameList, GameDetail, UserList, UserDetail, api_root, game_test, TileList
 
 urlpatterns = [
     url(r'^create_map/', create_map, name='create_map'),
     url(r'^game/(?P<gid>\d+)', game, name='game'),
+    url(r'^tile_list/(?P<map_id>[0-9]+)/$', TileList.as_view()),
     url(r'^$', api_root),
     url(r'^game_test/$', game_test),
     url(r'^games/$', GameList.as_view()),

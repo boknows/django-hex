@@ -11,8 +11,8 @@ from rest_framework import generics, permissions
 
 from django.contrib.auth.models import User
 from map.models import Game, GameMembership, GameLog, Map, Tile
-from map.serializers import GameSerializer, UserSerializer
-
+from map.serializers import GameSerializer, UserSerializer, TileSerializer
+from django.core.serializers.json import DjangoJSONEncoder
 import json
 
 
@@ -32,6 +32,7 @@ def create_map(request):
     return render(request, 'create_map.html', {
         'message': "Heyo!",
     })
+
 
 def game(request, gid):
     game = Game.objects.get(id=gid)
@@ -60,17 +61,31 @@ def game_test(request):
     print request.user
     return HttpResponse(json.dumps(data), content_type="application/json")
 
+@csrf_exempt
+def tile_list(request, map_id):
+    data = list(Tile.objects.filter(map=map_id))
+    json_data = json.dumps(data)
+    print json_data
+    return HttpResponse(json_data, content_type="application/json")
 
 class GameList(generics.ListAPIView):
     queryset = Game.objects.all()
     serializer_class = GameSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
-
 class GameDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     queryset = Game.objects.all()
     serializer_class = GameSerializer
+
+class TileList(generics.ListAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    queryset = Tile.objects.all()
+    serializer_class = TileSerializer
+
+    def get_queryset(self):
+        map_id = self.kwargs['map_id']
+        return Tile.objects.filter(map=map_id)
 
 
 class UserList(generics.ListAPIView):

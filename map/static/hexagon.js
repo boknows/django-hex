@@ -1,7 +1,7 @@
 console.log("Initializing new game...");
 
 var GLOBALS = {
-    "DEBUG": false,
+    "DEBUG": true,
     "gameState": "new",
     "gameID": 1,
     "colors": {
@@ -21,7 +21,14 @@ var GLOBALS = {
         hex.side = null;
         hex.canvas = document.getElementById("HexCanvas");
         hex.ctx = null;
-        hex.hexes = [];
+        $.ajax({
+          url: '/map/tile_list/18/',
+          async: false,
+          dataType: 'json',
+          success: function (response) {
+            hex.hexes = response;
+          }
+        });
         this.radius = 20;
         this.side = Math.round((3 / 2) * this.radius);
         this.height = Math.round(Math.sqrt(3) * this.radius);
@@ -42,18 +49,18 @@ var GLOBALS = {
 
         //Defines the hexes array, which provides the structure
         if(GLOBALS.gameState == "new"){
-            this.defineHexGrid(this.rows, this.cols);
+            this.defineHexGrid();
         }
 
         this.ctx = this.canvas.getContext('2d');
 
         //Draw base grid, then draw overlaid items on top
-        this.drawHexGrid(this.rows, this.cols);
+        hex.drawHexGrid();
 
     }
     hex.draw = function() {
         this.canvas.width = this.canvas.width; //clear canvas
-        this.drawHexGrid(this.rows, this.cols);
+        hex.drawHexGrid();
     }
     hex.rowcolToXY = function(row, col){
         var offsetColumn = (col % 2 == 0) ? false : true;
@@ -67,74 +74,23 @@ var GLOBALS = {
 
         return {x: x, y: y}
     }
-    hex.defineHexGrid = function(rows, cols) {
+    hex.defineHexGrid = function() {
         var terrains = ["grassland", "mountains", "water", "tundra"];
         this.canvasOriginX = this.canvas.getBoundingClientRect().left;
         this.canvasOriginY = this.canvas.getBoundingClientRect().top;
-        var currentHexX;
-        var currentHexY;
-        var offsetColumn = false;
-        for (var col = 0; col < cols; col++) {
-            this.hexes.push([]);
-            for (var row = 0; row < rows; row++) {
-                var currentTerrain = terrains[Math.floor(Math.random()*terrains.length)];
-                if (!offsetColumn) {
-                    currentHexX = (col * this.side) + this.canvasOriginX;
-                    currentHexY = (row * this.height) + this.canvasOriginY;
-                } else {
-                    currentHexX = col * this.side + this.canvasOriginX;
-                    currentHexY = (row * this.height) + this.canvasOriginY + (this.height * 0.5);
-                }
-                /*
-                h: highlighted
-                row: row
-                col: column
-                t: terrain type
-                tc: terrain color
-                txt: text written on hex
-                bor: borders
-                own: current owner
-                u: units
-                */
-                this.hexes[col].push({
-                    "h": false,
-                    "row": row,
-                    "col": col,
-                    "x": this.rowcolToXY(row, col).x,
-                    "y": this.rowcolToXY(row, col).y,
-                    "t": currentTerrain,
-                    "tc": GLOBALS.colors[currentTerrain],
-                    "txt": col + "," + row,
-                    "bor": {
-                        "n": null,
-                        "s": null,
-                        "nw": null,
-                        "sw": null,
-                        "ne": null,
-                        "se": null
-                    },
-                    "own": null,
-                    "u": null,
-                });
-            }
-            offsetColumn = !offsetColumn;
-        }
-        hex.saveData("saveAll", this.hexes);
     }
-    hex.drawHexGrid = function(rows, cols) {
+    hex.drawHexGrid = function() {
         //base grid
-        for (var i = 0; i < cols; i++) {
-            for (var j = 0; j < rows; j++) {
-                this.drawHex(this.hexes[i][j].x, this.hexes[i][j].y, this.hexes[i][j].tc, this.hexes[i][j].txt, false);
-            }
+        for (var i = 0; i < hex.hexes.length; i++){
+            coords = hex.rowcolToXY(hex.hexes[i].row, hex.hexes[i].column);
+            hex.drawHex(coords.x, coords.y, hex.hexes[i].terrain_color, hex.hexes[i].tile_text, false);
         }
 
         //overlay items
-        for (var i = 0; i < cols; i++) {
-            for (var j = 0; j < rows; j++) {
-                if (this.hexes[i][j].h == true) {
-                    this.drawHex(this.hexes[i][j].x, this.hexes[i][j].y, this.hexes[i][j].tc, this.hexes[i][j].txt, true);
-                }
+        for (var i = 0; i < hex.hexes.length; i++){
+            coords = hex.rowcolToXY(hex.hexes[i].row, hex.hexes[i].column);
+            if (hex.hexes[i].highlighted == true){
+                hex.drawHex(coords.x, coords.y, hex.hexes[i].terrain_color, hex.hexes[i].tile_text, true);
             }
         }
 
@@ -272,9 +228,11 @@ var GLOBALS = {
         }
         if (tile.row < this.rows && tile.row >= 0 && tile.col < this.cols && tile.col >= 0) {
             //console.log(tile);
-            this.hexes[tile.col][tile.row].h = this.hexes[tile.col][tile.row].h ? false : true;
-            console.log(hex.hexes[tile.col][tile.row]);
-            console.log(hex.toCubeCoord(tile.col, tile.row));
+            for (var i = 0; i < hex.hexes.length; i++){
+                if (hex.hexes[i].row == tile.row && hex.hexes[i].column == tile.col){
+                    hex.hexes[i].highlighted = hex.hexes[i].highlighted ? false : true;
+                }
+            }
             this.draw();
         } else {
             console.log("Click out of range");
@@ -287,26 +245,6 @@ var GLOBALS = {
         this.draw()
     }
 
-
-    hex.saveData = function(param, map) {
-        if (param == "saveAll"){
-            var save = {
-                param: "saveAll",
-                data: JSON.stringify(map)
-            };
-            $.ajax({
-                type: "POST",
-                url: "save.php",
-                data: save,
-                dataType: 'JSON',
-                success: function(data) {
-                    if(data == "Success"){
-                        console.log("Connected to db.");
-                    }
-                }
-            })
-        }
-    }
     hex.toCubeCoord = function(q, r) {
         /**  Function to convert odd-q offset coordinates to cube coordinates. Reference: http://www.redblobgames.com/grids/hexagons/
          * @param {Number} q - the column of the hex
