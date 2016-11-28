@@ -5,7 +5,6 @@ from django.contrib.auth.models import User
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
 from django.db.models import ForeignKey, DecimalField, CharField, IntegerField
-from django.utils.encoding import python_2_unicode_compatible
 
 
 MAX_PLAYERS_TO_INVITE = 7 # This is NOT including the starting player
@@ -66,6 +65,12 @@ class Tile(TimeStampedModel):
 
     def __str__(self):
         return 'Tile - row(%s) column(%s) - Owner(%s) - map_id(%s)' % (self.row, self.column, self.owner, self.map.id)
+
+    def attack(self, tile):
+        print self, " is attacking ", tile
+
+    def place_units(self):
+        pass
 
 
 class GameLog(TimeStampedModel):
