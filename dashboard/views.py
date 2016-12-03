@@ -33,7 +33,7 @@ def start_game_submit(request):
     if request.method == 'POST':
         form = CreateGameForm(request.POST)
         if form.is_valid():
-            start_game(form)
+            start_game(request.user, form)
 
     return redirect('dashboard:home')
 

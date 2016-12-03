@@ -12,8 +12,17 @@ var GLOBALS = {
     }
 };
 
-
+    var hex = {};
     hex.init = function() {
+        $.ajax({
+          url: '/map/tile_list/' + map_id,
+          async: false,
+          dataType: 'json',
+          success: function (response) {
+              hex.rows = response.rows;
+              hex.cols = response.columns;
+          }
+        });
         console.log("Initializing new game...");
         hex.radius = null;
         hex.height = null;
@@ -22,7 +31,7 @@ var GLOBALS = {
         hex.canvas = document.getElementById("HexCanvas");
         hex.ctx = null;
         $.ajax({
-          url: '/map/tile_list/18/',
+          url: '/map/tile_list/' + map_id,
           async: false,
           dataType: 'json',
           success: function (response) {
@@ -83,7 +92,7 @@ var GLOBALS = {
         //base grid
         for (var i = 0; i < hex.hexes.length; i++){
             coords = hex.rowcolToXY(hex.hexes[i].row, hex.hexes[i].column);
-            hex.drawHex(coords.x, coords.y, hex.hexes[i].terrain_color, hex.hexes[i].tile_text, false);
+            hex.drawHex(coords.x, coords.y, hex.hexes[i].terrain_color, hex.hexes[i].units, false);
         }
 
         //overlay items
@@ -231,6 +240,7 @@ var GLOBALS = {
             for (var i = 0; i < hex.hexes.length; i++){
                 if (hex.hexes[i].row == tile.row && hex.hexes[i].column == tile.col){
                     hex.hexes[i].highlighted = hex.hexes[i].highlighted ? false : true;
+                    console.log(hex.hexes[i]);
                 }
             }
             this.draw();

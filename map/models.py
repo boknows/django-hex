@@ -4,7 +4,7 @@ import datetime
 from django.contrib.auth.models import User
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
-from django.db.models import ForeignKey, DecimalField, CharField, IntegerField, BooleanField
+from django.db.models import ForeignKey, DecimalField, CharField, IntegerField, BooleanField, EmailField
 
 
 MAX_PLAYERS_TO_INVITE = 7 # This is NOT including the starting player
@@ -16,15 +16,61 @@ class Game(TimeStampedModel):
     turn_phase = CharField(max_length=64, null=True, blank=True)
     fortifies_used = IntegerField(null=True, blank=True)
     fortifies_remaining = IntegerField(null=True, blank=True)
+    INVITE = 'invite_phase'
+    PLAYING = 'playing'
+    ENDED = 'ended'
+    STATUS_TYPE_CHOICES = (
+        (INVITE, 'Player invite phase'),
+        (PLAYING, 'Game is in session'),
+        (ENDED, 'Game has ended')
+    )
+    status = models.CharField(
+        max_length=12,
+        choices=STATUS_TYPE_CHOICES,
+        default=INVITE,
+    )
 
-    def players(self):
-        users = []
-        print self
-        memberships = self.gamemembership_set.all()
-        print memberships
+    def is_ready_to_start(self):
+        memberships = self.memberships()
+        all_accepted_or_declined = True
         for membership in memberships:
-            if membership.user not in users:
-                users.append(membership.user)
+            if membership.membership_type == 'invited':
+                all_accepted_or_declined = False
+
+        return all_accepted_or_declined
+
+    def memberships(self):
+        return self.gamemembership_set.filter(game=self)
+
+    def players_accepted(self):
+        users = []
+        for membership in GameMembership.objects.filter(
+                game=self,
+                membership_type=GameMembership.ACCEPTED)\
+                .select_related('user'):
+            users.append(membership.user)
+        return users
+
+    def players_invited(self):
+        users = []
+        for membership in GameMembership.objects.filter(
+                game=self,
+                membership_type=GameMembership.INVITED):
+            if membership.email:
+                users.append({"type": "email", "value": membership.email})
+            else:
+                users.append({"type": "user", "value": membership.user})
+        return users
+
+    def players_declined(self):
+        users = []
+        for membership in GameMembership.objects.filter(
+                game=self,
+                membership_type=GameMembership.DECLINED):
+            if membership.email:
+                users.append({"type": "email", "value": membership.email})
+            else:
+                users.append({"type": "user", "value": membership.user})
         return users
 
     def __str__(self):
@@ -35,8 +81,24 @@ class GameMembership(TimeStampedModel):
     game = ForeignKey(Game, null=False)
     start_date = models.DateField(default=datetime.date.today)
     end_date = models.DateField(null=True, blank=True)
-    user = models.ForeignKey(User, unique=False)
+    user = models.ForeignKey(User, unique=False, null=True)
+    email = EmailField(null=True)
+    INVITED = 'invited'
+    ACCEPTED = 'accepted'
+    DECLINED = 'declined'
+    MEMBERSHIP_TYPE_CHOICES = (
+        (INVITED, 'Invited to Game'),
+        (ACCEPTED, 'Accepted Invite'),
+        (DECLINED, 'Declined Invite')
+    )
+    membership_type = models.CharField(
+        max_length=8,
+        choices=MEMBERSHIP_TYPE_CHOICES,
+        default=INVITED,
+    )
 
+    def __str__(self):
+        return 'GameMembership - id: %s - type: %s' % (self.id, self.membership_type)
 
 class Map(TimeStampedModel):
     game = ForeignKey(Game, null=False)
@@ -52,8 +114,8 @@ class Tile(TimeStampedModel):
     row = IntegerField(null=True, blank=True)
     column = IntegerField(null=True, blank=True)
     units = IntegerField(null=True, blank=True)
-    terrain = CharField(max_length=64, null=True, blank=True)
-    terrain_color = CharField(max_length=64, null=True, blank=True)
+    terrain = CharField(max_length=64, null=True, blank=True, default="grassland")
+    terrain_color = CharField(max_length=64, null=True, blank=True, default="green")
     owner = models.ForeignKey(User, unique=False, null=True)
     owner_color = CharField(max_length=64, null=True, blank=True)
     border_n = CharField(max_length=64, null=True, blank=True)
@@ -75,7 +137,7 @@ class Tile(TimeStampedModel):
         pass
 
 
-class GameLog(TimeStampedModel):
+class Action(TimeStampedModel):
     MISCELLANEOUS = 'MISC'
     TILE_ASSIGNMENT = 'TA'
     ATTACK = 'ATT'
@@ -89,7 +151,7 @@ class GameLog(TimeStampedModel):
         (MISCELLANEOUS, 'Miscellaneous')
     )
 
-    game = ForeignKey(Game, null=False)
+    map = ForeignKey(Map, null=False)
     date = models.DateTimeField(null=True, blank=True)
     action_type = models.CharField(
         max_length=4,

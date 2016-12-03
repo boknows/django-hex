@@ -12,9 +12,7 @@ Players: {{ game.players }}
 
 <script src="{% static 'jquery-3.1.1.min.js' %}" type="text/javascript"></script>
 <script>
-    var hex = {};
-    hex.rows = {{ map.rows }};
-    hex.cols = {{ map.columns }};
+    var map_id = {{ map.id }};
 </script>
 <script src="{% static 'hexagon.js' %}" type="text/javascript"></script>
 

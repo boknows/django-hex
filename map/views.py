@@ -6,13 +6,13 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
-
 from rest_framework import generics, permissions
-
 from django.contrib.auth.models import User
-from map.models import Game, GameMembership, GameLog, Map, Tile
-from map.serializers import GameSerializer, UserSerializer, TileSerializer
-from django.core.serializers.json import DjangoJSONEncoder
+from map.models import Game, GameMembership, Action, Map, Tile
+from map.serializers import GameSerializer, UserSerializer, TileSerializer, ActionSerializer, MapSerializer
+from map.forms import InvitedForm
+from dashboard.start_game import create_tiles
+
 import json
 
 
@@ -21,13 +21,13 @@ def create_map(request):
     columns = 10
     game = Game.objects.create()
     map = Map.objects.create(game=game)
-    game_log = GameLog.objects.create(game=game)
+    game_log = Action.objects.create(game=game)
     user = User.objects.get(username='bo')
     GameMembership.objects.create(user=user, game=game)
     for row in range(rows):
         for column in range(columns):
             tile = Tile.objects.create(map=map, row=row, column=column)
-            GameLog.objects.create(game=game, action_type="tile_created", tile_effected=tile)
+            Action.objects.create(game=game, action_type="tile_created", tile_effected=tile)
 
     return render(request, 'create_map.html', {
         'message': "Heyo!",
@@ -43,6 +43,27 @@ def game(request, gid):
         'game': game,
         'map': game_map,
         'game_tiles': game_tiles
+    })
+
+def pre_game(request, gid):
+    game = Game.objects.get(id=gid)
+    membership = GameMembership.objects.get(game=game, user=request.user)
+    if request.method == 'POST':
+        form = InvitedForm(instance=membership, data=request.POST, prefix="invited_form")
+        if form.is_valid():
+            membership = form.save(commit=False)
+            membership.save()
+            if game.is_ready_to_start():
+                create_tiles(game=game)
+        else:
+            print "not valid"
+    else:
+        form = InvitedForm(instance=membership, prefix="invited_form")
+    return render(request, "pre_game.html", {
+        'user': request.user,
+        'membership': membership,
+        'game': game,
+        'form': form
     })
 
 @api_view(['GET'])
@@ -61,12 +82,6 @@ def game_test(request):
     print request.user
     return HttpResponse(json.dumps(data), content_type="application/json")
 
-@csrf_exempt
-def tile_list(request, map_id):
-    data = list(Tile.objects.filter(map=map_id))
-    json_data = json.dumps(data)
-    print json_data
-    return HttpResponse(json_data, content_type="application/json")
 
 class GameList(generics.ListAPIView):
     queryset = Game.objects.all()
@@ -77,6 +92,24 @@ class GameDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     queryset = Game.objects.all()
     serializer_class = GameSerializer
+
+class ActionDetail(generics.ListAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    queryset = Action.objects.all()
+    serializer_class = ActionSerializer
+
+    def get_queryset(self):
+        map_id = self.kwargs['map_id']
+        return Action.objects.filter(map=map_id)
+
+class MapDetail(generics.ListAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    queryset = Map.objects.all()
+    serializer_class = MapSerializer
+
+    def get_queryset(self):
+        map_id = self.kwargs['map_id']
+        return Map.objects.filter(id=map_id)
 
 class TileList(generics.ListAPIView):
     permission_classes = (permissions.IsAuthenticated,)

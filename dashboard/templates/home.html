@@ -5,6 +5,10 @@
 <a href="{% url 'dashboard:create_game' %}">Create Game</a>
 <h3>Active Games</h3>
     {% for membership in active_games %}
-    <p>Game ID: <a href="{%  url 'map:game' gid=membership.game.id %}">{{ membership.game.id }}</a></p>
+        {% if membership.game.status == 'invite_phase' %}
+            <p>Game ID: <a href="{% url 'map:pre_game' gid=membership.game.id %}">{{ membership.game.id }}</a></p>
+        {% elif membership.game.status == 'playing' %}
+            <p>Game ID: <a href="{% url 'map:game' gid=membership.game.id %}">{{ membership.game.id }}</a></p>
+        {% endif %}
     {% endfor %}
 {% endblock content %}
