@@ -14,13 +14,14 @@ var GLOBALS = {
 
     var hex = {};
     hex.init = function() {
+        console.log("MapID", map_id);
         $.ajax({
-          url: '/map/tile_list/' + map_id,
+          url: '/map/api/' + map_id,
           async: false,
           dataType: 'json',
           success: function (response) {
-              hex.rows = response.rows;
-              hex.cols = response.columns;
+              hex.rows = response[0].rows;
+              hex.cols = response[0].columns;
           }
         });
         console.log("Initializing new game...");
@@ -245,6 +246,7 @@ var GLOBALS = {
             }
             this.draw();
         } else {
+            console.log(tile, hex.rows, hex.cols);
             console.log("Click out of range");
         }
 

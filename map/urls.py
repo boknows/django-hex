@@ -1,7 +1,8 @@
 from django.conf.urls import url
 from rest_framework.urlpatterns import format_suffix_patterns
 
-from views import create_map, game, pre_game, GameList, GameDetail, UserList, UserDetail, game_test, TileList, ActionDetail, MapDetail
+from views import create_map, game, pre_game, GameList, GameDetail, \
+    UserList, UserDetail, game_test, TileList, ActionDetail, MapDetail
 
 urlpatterns = [
     url(r'^create_map/', create_map, name='create_map'),
