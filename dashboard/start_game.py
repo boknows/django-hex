@@ -1,13 +1,13 @@
 from map.models import MAX_PLAYERS_TO_INVITE
 from django.contrib.auth.models import User
-from map.models import Game, GameLog, GameMembership, Map, Tile
+from map.models import Game, Action, GameMembership, Map, Tile
 
 import math
 import random
 
-def start_game(form):
+def start_game(initiating_user, form):
     if form.is_valid():
-        emails_that_exist = []
+        emails_that_exist = [initiating_user.email]
         emails_that_do_not_exist = []
         for i in range(1, MAX_PLAYERS_TO_INVITE):
             email = form.cleaned_data['email' + str(i)]
@@ -21,7 +21,13 @@ def start_game(form):
         users = User.objects.filter(email__in=emails_that_exist)
         game = Game.objects.create()
         for user in users:
-            GameMembership.objects.create(user=user, game=game)
+            if user == initiating_user:
+                membership_type = GameMembership.ACCEPTED
+            else:
+                membership_type = GameMembership.INVITED
+            GameMembership.objects.create(user=user, game=game, membership_type=membership_type)
+        for email in emails_that_do_not_exist:
+            GameMembership.objects.create(email=email, game=game)
 
         radius = 25  # TODO: Global variable?
         game_map = Map.objects.create(
@@ -33,8 +39,12 @@ def start_game(form):
             height=round(math.sqrt(3) * radius, 10),
             width=round(2 * radius, 10)
         )
-        game_log = GameLog.objects.create(game=game)
+        game_log = Action.objects.create(map=game_map)
 
+
+def create_tiles(game):
+        users = GameMembership.objects.filter(game=game, membership_type=GameMembership.ACCEPTED)
+        game_map = Map.objects.get(game=game)
         # Create Tiles
         for row in range(game_map.rows):
             for column in range(game_map.columns):
@@ -58,5 +68,8 @@ def start_game(form):
                 player_counter = 0
             else:
                 player_counter += 1
+
+        game.status = Game.PLAYING
+        game.save()
 
         return game

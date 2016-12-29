@@ -1,0 +1,20 @@
+{% extends "map/base.html" %}
+
+{% load staticfiles %}
+
+
+{% block content %}
+{% if membership.membership_type == 'accepted' %}
+Game ID: {{ game.id }}<br>
+Players accepted: {% for player in game.players_accepted %}{{ player }}{% endfor %}<br>
+Players waiting on: {% for player in game.players_invited %}{{ player.value }}{% endfor %}
+{% elif membership.membership_type == 'invited' %}
+<form method="post">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" value="Submit" />
+</form>
+{% elif membership.membership_type == 'declined' %}
+<p>You have declined the invite for this game</p>
+{% endif %}
+{% endblock content %}

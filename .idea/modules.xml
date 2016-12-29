@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/django-hex.iml" filepath="$PROJECT_DIR$/.idea/django-hex.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../hex-map-game/.idea/hex-map-game.iml" filepath="$PROJECT_DIR$/../hex-map-game/.idea/hex-map-game.iml" />
     </modules>
   </component>
 </project>
