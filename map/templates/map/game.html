@@ -1,0 +1,58 @@
+{% extends 'map/base.html' %}
+{% load staticfiles %}
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>{% block title %}{% endblock %}</title>
+    {% block base_css %}
+        <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}" />
+    {% endblock base_css %}
+
+    </head>
+
+    <body>
+	{% block content %}
+        <div class="container">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Polygonal Conquest</h3>
+                </div>
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="panel panel-default">
+                                <div class="panel-body">
+                                    UI action forms
+                                </div>
+                            </div>
+                            <div class="panel panel-default">
+                                <div class="panel-body">
+                                    Debug:<br>
+                                    <span id="tile_info"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <canvas id="HexCanvas" style="width: 500px; height: 500px; z-index: 0;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            var map_id = {{ map.id }};
+            var game_id = {{ game.id }};
+        </script>
+
+    {% endblock content %}
+
+
+
+	</body>
+
+
+</html>
+
+
