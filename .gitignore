@@ -41,3 +41,6 @@ Thumbs.db
 .ipynb_checkpoints/
 .idea/
 
+*.xml
+
+
