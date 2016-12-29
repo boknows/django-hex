@@ -60,4 +60,4 @@ local_static
 sqlite3.db
 scent.py
 node_modules/*
-
+*.pyc
