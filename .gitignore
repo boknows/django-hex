@@ -43,4 +43,21 @@ Thumbs.db
 
 *.xml
 
+.sma
+.idea
+*.swo
+*.swp
+*.pyc
+*.pem
+static/bower
+local_static
+.local-cache/
+*.log
+.venv
+.local-cache
+.DS_Store
+*.sql
+sqlite3.db
+scent.py
+node_modules/*
 
