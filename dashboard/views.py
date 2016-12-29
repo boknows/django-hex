@@ -13,7 +13,7 @@ from start_game import start_game
 @login_required
 def home(request):
     active_games = GameMembership.objects.filter(user=request.user)
-    return render(request, "home.html", {
+    return render(request, "dashboard/home.html", {
         'user': request.user,
         'active_games': active_games
     })
@@ -22,7 +22,7 @@ def home(request):
 @login_required
 def create_game(request):
     form = CreateGameForm()
-    return render(request, "create_game.html", {
+    return render(request, "dashboard/create_game.html", {
         'user': request.user,
         'form': form
     })

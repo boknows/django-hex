@@ -13,7 +13,6 @@ class Game(TimeStampedModel):
     start_date = models.DateField(default=datetime.date.today)
     end_date = models.DateField(null=True, blank=True)
     turn_player = CharField(max_length=64, null=True, blank=True)
-    turn_phase = CharField(max_length=64, null=True, blank=True)
     fortifies_used = IntegerField(null=True, blank=True)
     fortifies_remaining = IntegerField(null=True, blank=True)
     INVITE = 'invite_phase'
@@ -28,6 +27,20 @@ class Game(TimeStampedModel):
         max_length=12,
         choices=STATUS_TYPE_CHOICES,
         default=INVITE,
+    )
+
+    PLACEMENT = 'unit_placement'
+    ATTACK = 'attack'
+    FORTIFY = 'fortity'
+    TURN_PHASE_CHOICES = (
+        (PLACEMENT, 'Unit placement phase'),
+        (ATTACK, 'Attack phase'),
+        (FORTIFY, 'Unit fortification phase')
+    )
+    turn_phase = models.CharField(
+        max_length=14,
+        choices=TURN_PHASE_CHOICES,
+        default=PLACEMENT,
     )
 
     def is_ready_to_start(self):
@@ -141,23 +154,31 @@ class Action(TimeStampedModel):
     MISCELLANEOUS = 'MISC'
     TILE_ASSIGNMENT = 'TA'
     ATTACK = 'ATT'
-    PLACEMENT = 'PL'
+    PLACEMENT = 'PLACE'
+    MOVE = 'MOVE'
     FORTIFY = 'FORT'
-    BEGIN_TURN = 'BEGN'
+    BEGIN_TURN = 'BEGIN'
     END_TURN = 'END'
 
     ACTION_TYPE_CHOICES = (
         (TILE_ASSIGNMENT, 'Tile Assignment'),
-        (MISCELLANEOUS, 'Miscellaneous')
+        (MISCELLANEOUS, 'Miscellaneous'),
+        (ATTACK, 'Attack'),
+        (PLACEMENT, 'Unit Placement'),
+        (MOVE, 'Moving Units'),
+        (FORTIFY, 'Fortify Unit'),
+        (BEGIN_TURN, 'Begin Turn'),
+        (END_TURN, 'End Turn'),
     )
-
+    user = models.ForeignKey(User, unique=False, null=True)
     map = ForeignKey(Map, null=False)
     date = models.DateTimeField(null=True, blank=True)
     action_type = models.CharField(
-        max_length=4,
+        max_length=5,
         choices=ACTION_TYPE_CHOICES,
         default=MISCELLANEOUS,
     )
-    tile_acting = ForeignKey(related_name='tile_acting', to='Tile', null=True),
-    tile_effected = ForeignKey(related_name='tile_effected', to='Tile', null=True)
+    tile_acting = ForeignKey(Tile, related_name='tile_acting', null=True)
+    tile_effected = ForeignKey(Tile, related_name='tile_effected', null=True)
+    units = IntegerField(null=True, blank=True)
     message = CharField(max_length=200, null=True, blank=True)

@@ -20,7 +20,7 @@ def login(request):
                 log_user_in(request, user)
                 return redirect('dashboard:home')
 
-    return render(request, "login.html", {
+    return render(request, "authentication/login.html", {
         'form': form,
         'user': user
     })
@@ -46,6 +46,6 @@ def register(request):
                     membership.save()
             return redirect('dashboard:home')
 
-    return render(request, "register.html", {
+    return render(request, "authentication/register.html", {
         'form': form,
     })
