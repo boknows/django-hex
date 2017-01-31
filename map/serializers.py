@@ -13,12 +13,12 @@ class MapSerializer(serializers.ModelSerializer):
     class Meta:
         model = Map
         fields = ('id', 'game', 'rows', 'columns', 'radius', 'height', 'width', 'side')
+        lookup_field = 'id'
 
 class TileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tile
         fields = ('map', 'row', 'column', 'units', 'terrain', 'terrain_color', 'owner', 'owner_color', 'border_n', 'border_ne', 'border_nw', 'border_s', 'border_se', 'border_sw', 'highlighted')
-
 
 class ActionSerializer(serializers.ModelSerializer):
     class Meta:

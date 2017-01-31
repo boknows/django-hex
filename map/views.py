@@ -1,3 +1,5 @@
+from pprint import pprint
+
 from django.shortcuts import render
 from django.http import HttpResponse
 from rest_framework.reverse import reverse
@@ -75,6 +77,7 @@ def game_test(request):
     print request.user
     return HttpResponse(json.dumps(data), content_type="application/json")
 
+
 @api_view(['GET', 'POST'])
 def action_detail(request):
     if request.method == 'POST':
@@ -115,14 +118,25 @@ class GameDetail(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'id'
 
 
-class MapDetail(generics.ListAPIView):
+class MapDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     queryset = Map.objects.all()
     serializer_class = MapSerializer
+    lookup_field = 'id'
 
-    def get_queryset(self):
-        map_id = self.kwargs['map_id']
-        return Map.objects.filter(id=map_id)
+@api_view(['GET', 'POST',])
+def update_tiles(request):
+    if request.method == 'POST':
+        serializer = TileSerializer(data=request.data, many=True)
+        pprint(serializer)
+        if serializer.is_valid():
+            pprint(serializer.data)
+            serializer.save()
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            print "NOT VALID", serializer.errors
+        return Response(request.data, status=status.HTTP_201_CREATED)
 
 class TileList(generics.ListAPIView):
     permission_classes = (permissions.IsAuthenticated,)

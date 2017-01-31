@@ -19,9 +19,10 @@ var GLOBALS = {
             url: '/map/api/' + map_id,
             async: false,
             dataType: 'json',
+            type: "GET",
             success: function (response) {
-                hex.rows = response[0].rows;
-                hex.cols = response[0].columns;
+                hex.rows = response.rows;
+                hex.cols = response.columns;
             }
         });
         $.ajax({
@@ -240,6 +241,7 @@ var GLOBALS = {
             for (var i = 0; i < hex.hexes.length; i++){
                 currentHex = {"row": hex.hexes[i].row, "col": hex.hexes[i].column};
                 if (JSON.stringify(currentHex) == JSON.stringify(tile)){
+                    hex.turn_handler(hex.hexes[i]);
                     hex.hexes[i].highlighted = hex.hexes[i].highlighted ? false : true;
                     if (GLOBALS.DEBUG == true) {
                         str = "";
@@ -256,6 +258,11 @@ var GLOBALS = {
             console.log("Click out of range");
         }
 
+    }
+    hex.turn_handler = function(tile){
+        if (hex.turn_phase == 'unit_placement'){
+            tile.units += 1;
+        }
     }
     hex.clearMap = function(){
         this.hexes = [];

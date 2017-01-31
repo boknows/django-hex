@@ -22,14 +22,20 @@
                 <div class="panel-body">
                     <div class="row">
                         <div class="col-md-3">
-                            <div class="panel panel-default">
-                                <div class="panel-body">
-                                    UI action forms
-                                </div>
-                            </div>
+                            {% if game.turn_phase == 'fortify' %}
+                                {% include 'map/fortify.html' %}
+                            {% endif %}
+                            {% if game.turn_phase == 'attack' %}
+                                {% include 'map/attack.html' %}
+                            {% endif %}
+                            {% if game.turn_phase == 'unit_placement' %}
+                                {% include 'map/unit_placement.html' %}
+                            {% endif %}
                             <div class="panel panel-default">
                                 <div class="panel-body">
                                     Debug:<br>
+                                    <span><strong>User:</strong> {{ user }}</span><br>
+                                    <span><strong>Turn Phase:</strong> {{ game.turn_phase }}</span><br>
                                     <span id="tile_info"></span>
                                 </div>
                             </div>
@@ -41,11 +47,11 @@
                 </div>
             </div>
         </div>
-        <script>
-            var map_id = {{ map.id }};
-            var game_id = {{ game.id }};
-        </script>
 
+    <script>
+        var map_id = {{ map.id }};
+        var game_id = {{ game.id }};
+    </script>
     {% endblock content %}
 
 
