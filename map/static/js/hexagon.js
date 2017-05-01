@@ -53,7 +53,7 @@ var GLOBALS = {
         hex.canvasOriginX = 10;
         hex.canvasOriginY = 10;
 
-        hex.radius = 20;
+        hex.radius = 25;
         hex.side = Math.round((3 / 2) * hex.radius);
         hex.height = Math.round(Math.sqrt(3) * hex.radius);
         hex.width = Math.round(2 * hex.radius);
@@ -98,7 +98,9 @@ var GLOBALS = {
         //base grid
         for (var i = 0; i < hex.hexes.length; i++){
             var coords = hex.rowcolToXY(hex.hexes[i].row, hex.hexes[i].column);
-            hex.drawHex(coords.x, coords.y, hex.hexes[i].terrain_color, hex.hexes[i].units, false);
+            terrain_color = hex.hexes[i].terrain_color
+            text = hex.hexes[i].owner + ":" + hex.hexes[i].units;
+            hex.drawHex(coords.x, coords.y, terrain_color, text, false);
         }
 
         //overlay items
@@ -130,6 +132,7 @@ var GLOBALS = {
         if (fillColor && highlight == false) {
             this.ctx.fillStyle = fillColor;
             this.ctx.fill();
+            console.log(x0, y0, fillColor);
         }
         this.ctx.closePath();
         this.ctx.stroke();
@@ -139,7 +142,35 @@ var GLOBALS = {
             this.ctx.fillText(hexText, x0 + (this.width / 2) - (this.width / 4), y0 + (this.height - 5));
         }
     }
-    hex.drawHexBorders = function() {
+    hex.biome = function(e, m) {
+        if (e < 0.1){ return "#0077be"}
+        if (e < 0.12){ return "#FFEBCD"}
+
+        if (e > 0.8) {
+            if (m < 0.1){ return "#FFFF80"}
+            if (m < 0.2){ return "#471C01" }
+            if (m < 0.5){ return "#6a6c3b" }
+            return "#FFFFFF";
+        }
+
+        if (e > 0.6) {
+            if (m < 0.33){ return "#E0E080" }
+            if (m < 0.66){ return "#F0F080" }
+            return "#c4b884";
+        }
+
+        if (e > 0.3) {
+            if (m < 0.16){ return "#E0E080" }
+            if (m < 0.50){ return "#B0F080" }
+            if (m < 0.83){ return "#60E080"}
+            return "#20E0C0";
+        }
+
+        if (m < 0.16){ return "#F0F080"}
+        if (m < 0.33){ return "#E0E080"}
+        if (m < 0.66){ return "#60F080"}
+
+        return "#20FFA0";
 
     }
     hex.getRelativeCanvasOffset = function() {
@@ -242,7 +273,6 @@ var GLOBALS = {
                 currentHex = {"row": hex.hexes[i].row, "col": hex.hexes[i].column};
                 if (JSON.stringify(currentHex) == JSON.stringify(tile)){
                     hex.turn_handler(hex.hexes[i]);
-                    hex.hexes[i].highlighted = hex.hexes[i].highlighted ? false : true;
                     if (GLOBALS.DEBUG == true) {
                         str = "";
                         for (var key in hex.hexes[i]) {
@@ -260,8 +290,10 @@ var GLOBALS = {
 
     }
     hex.turn_handler = function(tile){
-        if (hex.turn_phase == 'unit_placement'){
+        if (hex.turn_phase == 'unit_placement' && hex.turn_player == tile.owner){
             tile.units += 1;
+        }else{
+            hex.hexes[i].highlighted = hex.hexes[i].highlighted ? false : true;
         }
     }
     hex.clearMap = function(){
@@ -340,13 +372,6 @@ var GLOBALS = {
             y: this.y - 1,
             z: this.z + 1
         }];
-        var chk = toOffsetCoord(x, y, z);
-        if (typeof(map.data[chk.r][chk.q].connect) != "undefined" || map.data[chk.r][chk.q].connect != "") {
-            for (i = 0; i < map.data[chk.r][chk.q].connect.length; i++) {
-                var tmp = toCubeCoord(map.data[chk.r][chk.q].connect[i].col, map.data[chk.r][chk.q].connect[i].row);
-                neighbors.push(tmp);
-            }
-        }
 
         return neighbors;
     }

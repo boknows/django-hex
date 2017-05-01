@@ -1,6 +1,6 @@
 from map.models import MAX_PLAYERS_TO_INVITE
 from django.contrib.auth.models import User
-from map.models import Game, Action, GameMembership, Map, Tile
+from map.models import Game, Action, GameMembership, Tile
 
 import math
 import random
@@ -17,9 +17,17 @@ def start_game(initiating_user, form):
                 else:
                     emails_that_do_not_exist.append(email)
 
+        radius = 25  # TODO: Global variable?
+        game = Game.objects.create(
+            rows=10,
+            columns=10,
+            radius=radius,
+            side=round(3 / 2 * radius, 10),
+            height=round(math.sqrt(3) * radius, 10),
+            width=round(2 * radius, 10)
+        )
         # initial data
         users = User.objects.filter(email__in=emails_that_exist)
-        game = Game.objects.create()
         for user in users:
             if user == initiating_user:
                 membership_type = GameMembership.ACCEPTED
@@ -29,45 +37,39 @@ def start_game(initiating_user, form):
         for email in emails_that_do_not_exist:
             GameMembership.objects.create(email=email, game=game)
 
-        radius = 25  # TODO: Global variable?
-        game_map = Map.objects.create(
-            game=game,
-            rows=10,
-            columns=10,
-            radius=radius,
-            side=round(3 / 2 * radius, 10),
-            height=round(math.sqrt(3) * radius, 10),
-            width=round(2 * radius, 10)
-        )
-        game_log = Action.objects.create(map=game_map)
+        game_log = Action.objects.create(game=game)
 
 
 def create_tiles(game):
-        users = GameMembership.objects.filter(game=game, membership_type=GameMembership.ACCEPTED)
-        game_map = Map.objects.get(game=game)
+        memberships = GameMembership.objects.filter(game=game, membership_type=GameMembership.ACCEPTED)
         # Create Tiles
-        for row in range(game_map.rows):
-            for column in range(game_map.columns):
-                Tile.objects.create(map=game_map, row=row, column=column)
+        for row in range(game.rows):
+            for column in range(game.columns):
+                Tile.objects.create(game=game, row=row, column=column)
 
         # Shuffle tiles in a list, and assign players
         tiles_list = []
-        tiles = Tile.objects.filter(map=game_map)
+        tiles = Tile.objects.filter(game=game)
         for tile in tiles:
             tiles_list.append(tile)
         random.shuffle(tiles_list)
 
         player_counter = 0
-        player_total = len(users) - 1
+        player_total = len(memberships) - 1
         while (tiles_list):
             assigned_tile = tiles_list[0]
-            assigned_tile.owner = users[player_counter]
+            assigned_tile.owner = memberships[player_counter].user
+            assigned_tile.units = 3
             assigned_tile.save()
             tiles_list.pop(0)
             if player_counter == player_total:
                 player_counter = 0
             else:
                 player_counter += 1
+
+        # Pick who's turn it is, randomly
+        turn_player = random.randint(0, player_total)
+        game.turn_player = memberships[turn_player].user
 
         game.status = Game.PLAYING
         game.save()
