@@ -28,29 +28,19 @@ $.ajaxSetup({
 });
 
 $( "#complete_placement" ).click(function() {
-    // hex.tiles_changed.forEach(function(tile){
-    //     console.log(tile, JSON.stringify(tile));
-    //     $.ajax({
-    //         url: '/map/tile_detail/' + tile.id + '/',
-    //         async: false,
-    //         type: "PUT",
-    //         dataType: 'json',
-    //         data: JSON.stringify(tile),
-    //         success: function (response) {
-    //
-    //         }
-    //     });
-    // });
-    $.ajax({
-            url: '/map/update_tiles/',
+    hex.tiles_changed.forEach(function(tile){
+        console.log(tile, JSON.stringify(tile));
+        $.ajax({
+            url: '/map/tile_detail/' + tile.id + '/',
             async: false,
-            type: "POST",
+            type: "PUT",
             dataType: 'json',
-            data: JSON.stringify(hex.hexes),
+            data: JSON.stringify(tile),
             success: function (response) {
 
             }
         });
+    });
     hex.draw();
 });
 

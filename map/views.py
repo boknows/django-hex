@@ -137,7 +137,7 @@ class GameDetail(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'id'
 
 
-@api_view(['GET', 'PUT', 'DELETE'])
+@api_view(['GET', 'PUT'])
 def tile_detail(request, pk):
     """
     Get, udpate, or delete a specific tile
@@ -160,9 +160,6 @@ def tile_detail(request, pk):
             return Response(
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    elif request.method == 'DELETE':
-        tile.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class TileList(generics.ListAPIView):
     # permission_classes = (permissions.IsAuthenticated,)
