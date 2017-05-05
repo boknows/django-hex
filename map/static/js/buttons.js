@@ -28,15 +28,48 @@ $.ajaxSetup({
 });
 
 $( "#complete_placement" ).click(function() {
-    console.log("hexes!!", hex.hexes);
+    // hex.tiles_changed.forEach(function(tile){
+    //     console.log(tile, JSON.stringify(tile));
+    //     $.ajax({
+    //         url: '/map/tile_detail/' + tile.id + '/',
+    //         async: false,
+    //         type: "PUT",
+    //         dataType: 'json',
+    //         data: JSON.stringify(tile),
+    //         success: function (response) {
+    //
+    //         }
+    //     });
+    // });
     $.ajax({
-        url: '/map/tile_detail/',
-        async: false,
-        type: "POST",
-        dataType: 'json',
-        data: JSON.stringify(hex.hexes),
-        success: function (response) {
-            hex.hexes = response;
-        }
-    });
+            url: '/map/update_tiles/',
+            async: false,
+            type: "POST",
+            dataType: 'json',
+            data: JSON.stringify(hex.hexes),
+            success: function (response) {
+
+            }
+        });
+    hex.draw();
+});
+
+$( "#undo_all" ).click(function() {
+    if (hex.actions.length > 0){
+        hex.actions.forEach(function(action){
+            action.tile.units--;
+        });
+        hex.tiles_changed = [];
+        hex.actions = [];
+        hex.draw();
+    }
+});
+
+$( "#undo_last" ).click(function() {
+    if (hex.actions.length > 0){
+        var last_action = hex.actions.slice(-1)[0];
+        last_action.tile.units = last_action.tile.units - last_action.amount;
+        hex.actions.pop();
+        hex.draw();
+    }
 });

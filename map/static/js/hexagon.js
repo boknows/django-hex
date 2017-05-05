@@ -16,16 +16,6 @@ var GLOBALS = {
     hex.init = function() {
         // Data Pulls from API
         $.ajax({
-            url: '/map/api/' + map_id,
-            async: false,
-            dataType: 'json',
-            type: "GET",
-            success: function (response) {
-                hex.rows = response.rows;
-                hex.cols = response.columns;
-            }
-        });
-        $.ajax({
             url: '/map/games/' + game_id,
             async: false,
             dataType: 'json',
@@ -35,10 +25,12 @@ var GLOBALS = {
                 hex.turn_player = response.turn_player;
                 hex.fortifies_used = response.fortifies_used;
                 hex.fortifies_remaining = response.fortifies_remaining;
+                hex.rows = response.rows;
+                hex.cols = response.columns;
             }
         });
         $.ajax({
-          url: '/map/tile_list/' + map_id,
+          url: '/map/tile_list/' + game_id,
           async: false,
           dataType: 'json',
           success: function (response) {
@@ -59,6 +51,9 @@ var GLOBALS = {
         hex.width = Math.round(2 * hex.radius);
         hex.selected = null;
         hex.effected = null;
+        hex.tiles_changed = [];
+        hex.actions = [];
+        hex.game_id = game_id;
 
         /*
         Set Size of main div to size of canvas
@@ -132,7 +127,6 @@ var GLOBALS = {
         if (fillColor && highlight == false) {
             this.ctx.fillStyle = fillColor;
             this.ctx.fill();
-            console.log(x0, y0, fillColor);
         }
         this.ctx.closePath();
         this.ctx.stroke();
@@ -291,7 +285,18 @@ var GLOBALS = {
     }
     hex.turn_handler = function(tile){
         if (hex.turn_phase == 'unit_placement' && hex.turn_player == tile.owner){
+            hex.actions.push({
+                "type": "unit_placement",
+                "amount": 1,
+                "tile": tile
+            });
+            hex.tiles_changed.forEach(function(tile_search, index) {
+                if (tile_search.column == tile.column && tile_search.row == tile.row){
+                    hex.tiles_changed.splice(index, 1);
+                }
+            });
             tile.units += 1;
+            hex.tiles_changed.push(tile);
         }else{
             hex.hexes[i].highlighted = hex.hexes[i].highlighted ? false : true;
         }

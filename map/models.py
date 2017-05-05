@@ -95,7 +95,7 @@ class Game(TimeStampedModel):
 
     @property
     def units_to_place(self):
-        tiles = Tile.objects.filter(map=self.map)
+        tiles = Tile.objects.filter(game=self)
         # TODO: Incorporate bonuses
         if tiles:
             units = len(tiles)/3
@@ -142,21 +142,19 @@ class Tile(TimeStampedModel):
     units = IntegerField(null=True, blank=True)
     terrain = CharField(max_length=64, null=True, blank=True, default="grassland")
     terrain_color = CharField(max_length=64, null=True, blank=True, default="green")
-    elevation = DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
-    moisture = DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
     owner = models.ForeignKey(User, unique=False, null=True)
-    owner_color = CharField(max_length=64, null=True, blank=True)
-    border_n = CharField(max_length=64, null=True, blank=True)
-    border_s = CharField(max_length=64, null=True, blank=True)
-    border_ne = CharField(max_length=64, null=True, blank=True)
-    border_nw = CharField(max_length=64, null=True, blank=True)
-    border_se = CharField(max_length=64, null=True, blank=True)
-    border_sw = CharField(max_length=64, null=True, blank=True)
-    tile_text = CharField(max_length=64, null=True, blank=True)
+    owner_color = CharField(max_length=64, null=False, blank=False, default="None")
+    border_n = CharField(max_length=64, null=False, blank=False, default="None")
+    border_s = CharField(max_length=64, null=False, blank=False, default="None")
+    border_ne = CharField(max_length=64, null=False, blank=False, default="None")
+    border_nw = CharField(max_length=64, null=False, blank=False, default="None")
+    border_se = CharField(max_length=64, null=False, blank=False, default="None")
+    border_sw = CharField(max_length=64, null=False, blank=False, default="None")
+    tile_text = CharField(max_length=64, null=False, blank=False, default="None")
     highlighted = BooleanField(default=False)
 
     def __str__(self):
-        return 'Tile - row(%s) column(%s) - Owner(%s) - map_id(%s)' % (self.row, self.column, self.owner, self.map.id)
+        return 'Tile - row(%s) column(%s) - Owner(%s) - game_id(%s)' % (self.row, self.column, self.owner, self.game.id)
 
     def attack(self, tile):
         print self, " is attacking ", tile

@@ -137,19 +137,32 @@ class GameDetail(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'id'
 
 
-@api_view(['GET', 'POST',])
-def update_tiles(request):
-    if request.method == 'POST':
-        serializer = TileSerializer(data=request.data, many=True)
-        pprint(serializer)
-        if serializer.is_valid():
-            pprint(serializer.data)
-            serializer.save()
+@api_view(['GET', 'PUT', 'DELETE'])
+def tile_detail(request, pk):
+    """
+    Get, udpate, or delete a specific tile
+    """
+    try:
+        tile = Tile.objects.get(pk=pk)
+    except Tile.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+    if request.method == 'GET':
+        serializer = TileSerializer(tile)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = TileSerializer(tile, data=json.loads(request.body))
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
         else:
-            print "NOT VALID", serializer.errors
-        return Response(request.data, status=status.HTTP_201_CREATED)
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        tile.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class TileList(generics.ListAPIView):
     # permission_classes = (permissions.IsAuthenticated,)
