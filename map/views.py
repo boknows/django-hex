@@ -1,4 +1,7 @@
-from django.shortcuts import render
+from pprint import pprint
+
+import math
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from rest_framework.reverse import reverse
 from rest_framework import status
@@ -8,25 +11,26 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from rest_framework import generics, permissions, mixins
 from django.contrib.auth.models import User
-from map.models import Game, GameMembership, Action, Map, Tile
-from map.serializers import GameSerializer, UserSerializer, TileSerializer, ActionSerializer, MapSerializer
+from map.models import Game, GameMembership, Action, Tile
+from map.serializers import GameSerializer, UserSerializer, TileSerializer, ActionSerializer
 from map.forms import InvitedForm
 from dashboard.start_game import create_tiles
 from actions import attack, move
 import json
+import random
+
 
 
 def create_map(request):
-    rows = 10
-    columns = 10
+    rows = 100
+    columns = 100
     game = Game.objects.create()
-    map = Map.objects.create(game=game)
     game_log = Action.objects.create(game=game)
     user = User.objects.get(username='bo')
     GameMembership.objects.create(user=user, game=game)
     for row in range(rows):
         for column in range(columns):
-            tile = Tile.objects.create(map=map, row=row, column=column)
+            tile = Tile.objects.create(game=game, row=row, column=column)
             Action.objects.create(game=game, action_type="tile_created", tile_effected=tile)
 
     return render(request, 'map/create_map.html', {
@@ -34,19 +38,35 @@ def create_map(request):
     })
 
 
-def game(request, gid):
-    game = Game.objects.get(id=gid)
-    game_map = Map.objects.get(game=game)
-    game_tiles = Tile.objects.filter(map=game_map)
+def generate_map(request):
+    rows = 20
+    columns = 20
+    game = Game.objects.create()
+    user = User.objects.get(username='bo')
+    GameMembership.objects.create(user=user, game=game)
+
+    game_tiles = Tile.objects.filter(game=game)
+
     return render(request, "map/game.html", {
         'user': request.user,
         'game': game,
-        'map': game_map,
+        'game_tiles': game_tiles
+    })
+
+
+def game(request, gid):
+    game = Game.objects.get(id=gid)
+    game_tiles = Tile.objects.filter(game=game)
+    return render(request, "map/game.html", {
+        'user': request.user,
+        'game': game,
         'game_tiles': game_tiles
     })
 
 def pre_game(request, gid):
     game = Game.objects.get(id=gid)
+    if game.status == "playing":
+        return redirect('map:game', game.id)
     membership = GameMembership.objects.get(game=game, user=request.user)
     if request.method == 'POST':
         form = InvitedForm(instance=membership, data=request.POST, prefix="invited_form")
@@ -55,6 +75,7 @@ def pre_game(request, gid):
             membership.save()
             if game.is_ready_to_start():
                 create_tiles(game=game)
+                return redirect('map:game', game.id)
         else:
             print "not valid"
     else:
@@ -75,6 +96,7 @@ def game_test(request):
     print request.user
     return HttpResponse(json.dumps(data), content_type="application/json")
 
+
 @api_view(['GET', 'POST'])
 def action_detail(request):
     if request.method == 'POST':
@@ -83,19 +105,19 @@ def action_detail(request):
         if serializer.is_valid():
             tile_acting = serializer.validated_data['tile_acting']
             tile_effected = serializer.validated_data['tile_effected']
-            map = serializer.validated_data['map']
+            game = serializer.validated_data['game']
             action_type = serializer.validated_data['action_type']
             # Validation rules for suspicious calls
             if tile_acting.owner != request.user:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            if tile_acting.map != map or tile_effected.map != map:
+            if tile_acting.game != game or tile_effected.game != game:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             if action_type == "ATT":
-                tile_acting, tile_effected = attack(map, tile_acting, tile_effected)
+                tile_acting, tile_effected = attack(game, tile_acting, tile_effected)
                 # if tile_effected.tiles == 0, prompt for movement action details on UI
             if action_type == "MOVE":
                 units_to_move = serializer.validated_data['units']
-                tile_acting, tile_effected = move(map, tile_acting, tile_effected, units_to_move)
+                tile_acting, tile_effected = move(game, tile_acting, tile_effected, units_to_move)
 
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -105,7 +127,7 @@ def action_detail(request):
 class GameList(generics.ListAPIView):
     queryset = Game.objects.all()
     serializer_class = GameSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    # permission_classes = (permissions.IsAuthenticated,)
 
 
 class GameDetail(generics.RetrieveUpdateDestroyAPIView):
@@ -115,23 +137,62 @@ class GameDetail(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'id'
 
 
-class MapDetail(generics.ListAPIView):
-    permission_classes = (permissions.IsAuthenticated,)
-    queryset = Map.objects.all()
-    serializer_class = MapSerializer
+@api_view(['GET', 'PUT'])
+def game_detail(request, pk):
+    """
+    Get, udpate, or delete a specific tile
+    """
+    try:
+        game = Game.objects.get(pk=pk)
+    except Game.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
-    def get_queryset(self):
-        map_id = self.kwargs['map_id']
-        return Map.objects.filter(id=map_id)
+    if request.method == 'GET':
+        serializer = GameSerializer(game)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = GameSerializer(game, data=json.loads(request.body))
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT'])
+def tile_detail(request, pk):
+    """
+    Get, udpate, or delete a specific tile
+    """
+    try:
+        tile = Tile.objects.get(pk=pk)
+    except Tile.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = TileSerializer(tile)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = TileSerializer(tile, data=json.loads(request.body))
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class TileList(generics.ListAPIView):
-    permission_classes = (permissions.IsAuthenticated,)
+    # permission_classes = (permissions.IsAuthenticated,)
     queryset = Tile.objects.all()
     serializer_class = TileSerializer
 
     def get_queryset(self):
-        map_id = self.kwargs['map_id']
-        return Tile.objects.filter(map=map_id)
+        game_id = self.kwargs['game_id']
+        return Tile.objects.filter(game=game_id)
 
 
 class UserList(generics.ListAPIView):

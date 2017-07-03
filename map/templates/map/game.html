@@ -21,31 +21,19 @@
                 </div>
                 <div class="panel-body">
                     <div class="row">
-                        <div class="col-md-3">
-                            <div class="panel panel-default">
-                                <div class="panel-body">
-                                    UI action forms
-                                </div>
-                            </div>
-                            <div class="panel panel-default">
-                                <div class="panel-body">
-                                    Debug:<br>
-                                    <span id="tile_info"></span>
-                                </div>
-                            </div>
-                        </div>
+                        {% include 'map/turn_phase.html' %}
+
                         <div class="col-md-9">
-                            <canvas id="HexCanvas" style="width: 500px; height: 500px; z-index: 0;"></canvas>
+                            <canvas id="HexCanvas" style="width: 800px; height: 800px; z-index: 0;"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <script>
-            var map_id = {{ map.id }};
-            var game_id = {{ game.id }};
-        </script>
 
+    <script>
+        var game_id = {{ game.id }};
+    </script>
     {% endblock content %}
 
 

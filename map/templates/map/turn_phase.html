@@ -1,0 +1,23 @@
+<div class="col-md-3">
+    {% if user == game.turn_player %}
+        {% if game.turn_phase == 'fortify' %}
+            {% include 'map/fortify.html' %}
+        {% endif %}
+        {% if game.turn_phase == 'attack' %}
+            {% include 'map/attack.html' %}
+        {% endif %}
+        {% if game.turn_phase == 'unit_placement' %}
+            <span>Units to be placed: {{ game.units_to_place }}</span>
+            {% include 'map/unit_placement.html' %}
+        {% endif %}
+    {% endif %}
+    <div class="panel panel-default">
+        <div class="panel-body">
+            Debug:<br>
+            <span><strong>User:</strong> {{ user }}</span><br>
+            <span><strong>Turn Phase:</strong> {{ game.turn_phase }}</span><br>
+            <span><strong>Player Turn:</strong>{{ game.turn_player }}</span><br>
+            <span id="tile_info"></span>
+        </div>
+    </div>
+</div>
