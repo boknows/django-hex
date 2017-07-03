@@ -116,6 +116,7 @@ class GameMembership(TimeStampedModel):
     start_date = models.DateField(default=datetime.date.today)
     end_date = models.DateField(null=True, blank=True)
     user = models.ForeignKey(User, unique=False, null=True)
+    player_color = CharField(max_length=12, null=False, blank=False, default="")
     email = EmailField(null=True)
     INVITED = 'invited'
     ACCEPTED = 'accepted'
@@ -152,6 +153,7 @@ class Tile(TimeStampedModel):
     border_sw = CharField(max_length=64, null=False, blank=False, default="None")
     tile_text = CharField(max_length=64, null=False, blank=False, default="None")
     highlighted = BooleanField(default=False)
+    highlight_color = CharField(max_length=12, null=False, blank=False, default="")
 
     def __str__(self):
         return 'Tile - row(%s) column(%s) - Owner(%s) - game_id(%s)' % (self.row, self.column, self.owner, self.game.id)

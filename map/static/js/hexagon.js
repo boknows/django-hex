@@ -17,6 +17,13 @@ var GLOBALS = {
         // Data Pulls from API
         hex.game_info = {};
         hex.get_game_info();
+        hex.hexes = [];
+        for (var rows = 0; rows < hex.game_info.rows; rows++){
+            hex.hexes.push([])
+            for (var columns = 0; columns < hex.game_info.columns; columns++){
+                hex.hexes[rows].push([]);
+            }
+        }
         hex.get_tiles();
 
         hex.canvas = document.getElementById("HexCanvas");
@@ -96,7 +103,9 @@ var GLOBALS = {
           async: false,
           dataType: 'json',
           success: function (response) {
-            hex.hexes = response;
+              response.forEach(function(tile) {
+                  hex.hexes[tile.row][tile.column] = tile;
+              });
           }
         });
     }
@@ -122,45 +131,73 @@ var GLOBALS = {
     }
     hex.drawHexGrid = function() {
         //base grid
-        for (var i = 0; i < hex.hexes.length; i++){
-            var coords = hex.rowcolToXY(hex.hexes[i].row, hex.hexes[i].column);
-            terrain_color = hex.hexes[i].terrain_color
-            text = hex.hexes[i].owner + ":" + hex.hexes[i].units;
-            hex.drawHex(coords.x, coords.y, terrain_color, text, false);
+        for (var row = 0; row < hex.hexes.length; row++){
+            for (var column = 0; column < hex.hexes[row].length; column++){
+                var coords = hex.rowcolToXY(hex.hexes[row][column].row, hex.hexes[row][column].column);
+                text = hex.hexes[row][column].owner + ":" + hex.hexes[row][column].units;
+                hex.drawHex(coords.x, coords.y, hex.hexes[row][column].owner_color, text, false);
+            }
         }
 
         //overlay items
-        for (var i = 0; i < hex.hexes.length; i++){
-            var coords = hex.rowcolToXY(hex.hexes[i].row, hex.hexes[i].column);
-            if (hex.hexes[i].highlighted == true){
-                hex.drawHex(coords.x, coords.y, hex.hexes[i].terrain_color, hex.hexes[i].tile_text, true);
+        for (var row = 0; row < hex.hexes.length; row++){
+            for (var column = 0; column < hex.hexes[row].length; column++){
+                var coords = hex.rowcolToXY(hex.hexes[row][column].row, hex.hexes[row][column].column);
+                if (hex.hexes[row][column].highlighted == true){
+                    hex.drawHex(coords.x, coords.y, hex.hexes[row][column].owner_color, hex.hexes[row][column].tile_text, true, hex.hexes[row][column].highlight_color);
+                }
             }
         }
 
     }
-    hex.drawHex = function(x0, y0, fillColor, hexText, highlight) {
+    hex.drawHex = function(x0, y0, fillColor, hexText, highlight, highlight_color) {
+        //TODO: New draw logic? https://jsfiddle.net/6Lb8w4gr/
         if (highlight == true) {
-            this.ctx.strokeStyle = "#00F2FF";
+            if (highlight_color){
+                this.ctx.strokeStyle = highlight_color;
+            }else{
+                this.ctx.strokeStyle = "#00F2FF";
+            }
             this.ctx.lineWidth = 4;
         } else {
             this.ctx.strokeStyle = "#000";
             this.ctx.lineWidth = 2;
         }
 
-        this.ctx.beginPath();
-        this.ctx.moveTo(x0 + this.width - this.side, y0);
-        this.ctx.lineTo(x0 + this.side, y0);
-        this.ctx.lineTo(x0 + this.width, y0 + (this.height / 2));
-        this.ctx.lineTo(x0 + this.side, y0 + this.height);
-        this.ctx.lineTo(x0 + this.width - this.side, y0 + this.height);
-        this.ctx.lineTo(x0, y0 + (this.height / 2));
-        if (highlight == true) {}
-        if (fillColor && highlight == false) {
-            this.ctx.fillStyle = fillColor;
-            this.ctx.fill();
+        if (highlight == true){
+            this.ctx.beginPath();
+            var modifier = 0.9;
+            this.ctx.moveTo(x0 + (this.width*modifier) - (this.side*modifier), y0);
+            this.ctx.lineTo(x0 + (this.side*modifier), y0);
+            this.ctx.lineTo(x0 + (this.width*modifier), y0 + ((this.height / 2)*modifier));
+            this.ctx.lineTo(x0 + (this.side*modifier), y0 + (this.height*modifier));
+            this.ctx.lineTo(x0 + (this.width*modifier) - (this.side*modifier), y0 + (this.height*modifier));
+            this.ctx.lineTo(x0, y0 + ((this.height / 2)*modifier));
+            if (highlight == true) {
+            }
+            if (fillColor && highlight == false) {
+                this.ctx.fillStyle = fillColor;
+                this.ctx.fill();
+            }
+            this.ctx.closePath();
+            this.ctx.stroke();
+        }else {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x0 + this.width - this.side, y0);
+            this.ctx.lineTo(x0 + this.side, y0);
+            this.ctx.lineTo(x0 + this.width, y0 + (this.height / 2));
+            this.ctx.lineTo(x0 + this.side, y0 + this.height);
+            this.ctx.lineTo(x0 + this.width - this.side, y0 + this.height);
+            this.ctx.lineTo(x0, y0 + (this.height / 2));
+            if (highlight == true) {
+            }
+            if (fillColor && highlight == false) {
+                this.ctx.fillStyle = fillColor;
+                this.ctx.fill();
+            }
+            this.ctx.closePath();
+            this.ctx.stroke();
         }
-        this.ctx.closePath();
-        this.ctx.stroke();
         if (hexText) {
             this.ctx.font = "5px";
             this.ctx.fillStyle = "#000";
@@ -294,17 +331,19 @@ var GLOBALS = {
         }
         if (tile.row < hex.game_info.rows && tile.row >= 0 && tile.col < hex.game_info.columns && tile.col >= 0) {
             //console.log(tile);
-            for (var i = 0; i < hex.hexes.length; i++){
-                currentHex = {"row": hex.hexes[i].row, "col": hex.hexes[i].column};
-                if (JSON.stringify(currentHex) == JSON.stringify(tile)){
-                    hex.turn_handler(hex.hexes[i]);
-                    if (GLOBALS.DEBUG == true) {
-                        str = "";
-                        for (var key in hex.hexes[i]) {
-                            str += "<b>"+ key + ":</b> " + hex.hexes[i][key] + "<br>";
+            for (var row = 0; row < hex.hexes.length; row++) {
+                for (var column = 0; column < hex.hexes[row].length; column++) {
+                    currentHex = {"row": hex.hexes[row][column].row, "col": hex.hexes[row][column].column};
+                    if (JSON.stringify(currentHex) == JSON.stringify(tile)){
+                        hex.turn_handler(hex.hexes[row][column]);
+                        if (GLOBALS.DEBUG == true) {
+                            str = "";
+                            for (var key in hex.hexes[row][column]) {
+                                str += "<b>"+ key + ":</b> " + hex.hexes[row][column][key] + "<br>";
+                            }
+                            $('#tile_info').html(str);
+                            console.log(hex.hexes[row][column]);
                         }
-                        $('#tile_info').html(str);
-                        console.log(hex.hexes[i]);
                     }
                 }
             }
@@ -332,23 +371,29 @@ var GLOBALS = {
             hex.tiles_changed.push(tile);
         }else{
             console.log("not", tile);
-            for (var i = 0; i < hex.hexes.length; i++){
-                if (hex.hexes[i].row == tile.row && hex.hexes[i].column == tile.column){
-                    hex.highlight('attack', i);
+            for (var row = 0; row < hex.hexes.length; row++) {
+                for (var column = 0; column < hex.hexes[row].length; column++) {
+                    if (hex.hexes[row][column].row == tile.row && hex.hexes[row][column].column == tile.column){
+                        hex.highlight('attack', row, column);
+                    }
                 }
             }
 
 
         }
     };
-    hex.highlight = function(phase, tile_num){
+    hex.highlight = function(phase, row, column){
         if (phase == 'attack'){
-            hex.hexes[tile_num].highlighted = hex.hexes[tile_num].highlighted ? false : true;
-            cube_coords = hex.toCubeCoord(hex.hexes[tile_num].column, hex.hexes[tile_num].row);
+            hex.hexes[row][column].highlighted = hex.hexes[row][column].highlighted ? false : true;
+            cube_coords = hex.toCubeCoord(hex.hexes[row][column].column, hex.hexes[row][column].row);
             neighors = hex.getNeighbors(cube_coords.x, cube_coords.y, cube_coords.z);
             for (var i = 0; i < neighors.length; i++){
                 coords = hex.toOffsetCoord(neighors[i].x, neighors[i].y, neighors[i].z)
-                
+                console.log("coords", coords);
+                hex.hexes[coords.r][coords.q].highlighted = hex.hexes[coords.r][coords.q].highlighted ? false : true;
+                if (hex.hexes[coords.r][coords.q].highlighted == true){
+                    hex.hexes[coords.r][coords.q].highlight_color = "#f44242";
+                }
             }
             this.draw();
         }
