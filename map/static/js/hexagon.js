@@ -15,28 +15,9 @@ var GLOBALS = {
     var hex = {};
     hex.init = function() {
         // Data Pulls from API
-        $.ajax({
-            url: '/map/games/' + game_id,
-            async: false,
-            dataType: 'json',
-            type: "GET",
-            success: function (response) {
-                hex.turn_phase = response.turn_phase;
-                hex.turn_player = response.turn_player;
-                hex.fortifies_used = response.fortifies_used;
-                hex.fortifies_remaining = response.fortifies_remaining;
-                hex.rows = response.rows;
-                hex.cols = response.columns;
-            }
-        });
-        $.ajax({
-          url: '/map/tile_list/' + game_id,
-          async: false,
-          dataType: 'json',
-          success: function (response) {
-            hex.hexes = response;
-          }
-        });
+        hex.game_info = {};
+        hex.get_game_info();
+        hex.get_tiles();
 
         hex.canvas = document.getElementById("HexCanvas");
         hex.ctx = hex.canvas.getContext('2d');
@@ -68,6 +49,56 @@ var GLOBALS = {
         //Draw base grid, then draw overlaid items on top
         hex.drawHexGrid();
 
+    }
+    hex.get_game_info = function(){
+        $.ajax({
+            url: '/map/games/' + game_id,
+            async: false,
+            dataType: 'json',
+            type: "GET",
+            success: function (response) {
+                hex.game_info.turn_phase = response.turn_phase;
+                hex.game_info.turn_player = response.turn_player;
+                hex.game_info.fortifies_used = response.fortifies_used;
+                hex.game_info.fortifies_remaining = response.fortifies_remaining;
+                hex.game_info.rows = response.rows;
+                hex.game_info.columns = response.columns;
+            }
+        });
+    }
+    hex.update_game_info = function(){
+       $.ajax({
+            url: '/map/games/' + game_id + '/',
+            async: false,
+            dataType: 'json',
+            data: JSON.stringify(hex.game_info),
+            type: "PUT",
+            success: function (response) {
+                hex.game_info.turn_phase = response.turn_phase;
+                hex.game_info.turn_player = response.turn_player;
+                hex.game_info.fortifies_used = response.fortifies_used;
+                hex.game_info.fortifies_remaining = response.fortifies_remaining;
+                hex.game_info.rows = response.rows;
+                hex.game_info.columns = response.columns;
+            }
+        });
+    }
+    hex.increment_turn_phase = function(){
+        if (hex.game_info.turn_phase == 'unit_placement'){
+            hex.game_info.turn_phase = 'attack';
+        }else if (hex.game_info.turn_phase == 'attack'){
+            hex.game_info.turn_phase = 'fortify';
+        }
+    }
+    hex.get_tiles = function(){
+        $.ajax({
+          url: '/map/tile_list/' + game_id,
+          async: false,
+          dataType: 'json',
+          success: function (response) {
+            hex.hexes = response;
+          }
+        });
     }
     hex.draw = function() {
         this.canvas.width = this.canvas.width; //clear canvas
@@ -261,7 +292,7 @@ var GLOBALS = {
         if (GLOBALS.DEBUG == true) {
             $('#tile_info').text(tile);
         }
-        if (tile.row < this.rows && tile.row >= 0 && tile.col < this.cols && tile.col >= 0) {
+        if (tile.row < hex.game_info.rows && tile.row >= 0 && tile.col < hex.game_info.columns && tile.col >= 0) {
             //console.log(tile);
             for (var i = 0; i < hex.hexes.length; i++){
                 currentHex = {"row": hex.hexes[i].row, "col": hex.hexes[i].column};
@@ -282,9 +313,11 @@ var GLOBALS = {
             console.log("Click out of range");
         }
 
-    }
+    };
+
     hex.turn_handler = function(tile){
-        if (hex.turn_phase == 'unit_placement' && hex.turn_player == tile.owner){
+        if (hex.game_info.turn_phase == 'unit_placement' && hex.game_info.turn_player == tile.owner){
+            console.log("unit placement");
             hex.actions.push({
                 "type": "unit_placement",
                 "amount": 1,
@@ -298,9 +331,29 @@ var GLOBALS = {
             tile.units += 1;
             hex.tiles_changed.push(tile);
         }else{
-            hex.hexes[i].highlighted = hex.hexes[i].highlighted ? false : true;
+            console.log("not", tile);
+            for (var i = 0; i < hex.hexes.length; i++){
+                if (hex.hexes[i].row == tile.row && hex.hexes[i].column == tile.column){
+                    hex.highlight('attack', i);
+                }
+            }
+
+
         }
-    }
+    };
+    hex.highlight = function(phase, tile_num){
+        if (phase == 'attack'){
+            hex.hexes[tile_num].highlighted = hex.hexes[tile_num].highlighted ? false : true;
+            cube_coords = hex.toCubeCoord(hex.hexes[tile_num].column, hex.hexes[tile_num].row);
+            neighors = hex.getNeighbors(cube_coords.x, cube_coords.y, cube_coords.z);
+            for (var i = 0; i < neighors.length; i++){
+                coords = hex.toOffsetCoord(neighors[i].x, neighors[i].y, neighors[i].z)
+                
+            }
+            this.draw();
+        }
+    };
+
     hex.clearMap = function(){
         this.hexes = [];
         this.defineHexGrid(this.rows, this.cols);

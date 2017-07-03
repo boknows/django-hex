@@ -138,6 +138,30 @@ class GameDetail(generics.RetrieveUpdateDestroyAPIView):
 
 
 @api_view(['GET', 'PUT'])
+def game_detail(request, pk):
+    """
+    Get, udpate, or delete a specific tile
+    """
+    try:
+        game = Game.objects.get(pk=pk)
+    except Game.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = GameSerializer(game)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = GameSerializer(game, data=json.loads(request.body))
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT'])
 def tile_detail(request, pk):
     """
     Get, udpate, or delete a specific tile

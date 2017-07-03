@@ -41,7 +41,10 @@ $( "#complete_placement" ).click(function() {
             }
         });
     });
-    hex.draw();
+    hex.game_info.turn_phase = 'attack';
+    hex.update_game_info();
+    hex.increment_turn_phase();
+    location.reload();
 });
 
 $( "#undo_all" ).click(function() {
